@@ -18,6 +18,7 @@ env/
 # --- Project Data (QUAN TRỌNG: Theo ghi chú trong ảnh) ---
 # Bỏ qua toàn bộ dữ liệu train/val
 data/
+output/
 
 # --- Models & Weights (File nặng) ---
 # Bỏ qua các file trọng số mô hình nặng để tránh git bị lỗi hoặc quá tải
@@ -26,6 +27,7 @@ data/
 *.onnx
 *.bin
 *.tflite
+*.mp4
 models/yolo/*.pt
 models/vlm/*.bin
 models/vlm/*.pt
