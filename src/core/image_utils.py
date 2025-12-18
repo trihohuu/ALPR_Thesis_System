@@ -2,34 +2,21 @@ import cv2
 import numpy as np
 
 def preprocess_plate(plate_img):
-    """
-    Xử lý ảnh biển số trước khi đưa vào OCR
-    """
     if plate_img is None or plate_img.size == 0:
         return plate_img
 
-    # 1. Phóng to ảnh (Upscale)
-    # OCR hoạt động tốt hơn với ảnh to, đặc biệt nếu biển số ở xa
+    # 2. Phóng to ảnh (Upscale)
     h, w = plate_img.shape[:2]
-    scale_factor = 2 # Phóng to gấp đôi
+    scale_factor = 1  # Giảm xuống 2 là đủ, 3 có thể làm vỡ hạt quá mức
     resized = cv2.resize(plate_img, (w * scale_factor, h * scale_factor), interpolation=cv2.INTER_CUBIC)
 
-    # 2. Chuyển sang ảnh xám (Grayscale)
+    # 3. Chuyển xám và khử nhiễu
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-
-    # 3. Khử nhiễu nhẹ (Gaussian Blur)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # 4. Tăng tương phản/Cân bằng sáng (Histogram Equalization)
-    # Giúp biển số rõ hơn trong điều kiện chói hoặc tối
-    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    # enhanced = clahe.apply(blur)
-    
-    # Hoặc dùng Threshold (nhị phân hóa) nếu muốn chữ đen nền trắng tuyệt đối
+    # 4. Nhị phân hóa (Tuỳ chọn: Giúp chữ đen/nền trắng tách biệt hẳn)
     # _, binary = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    # Tạm thời trả về ảnh xám đã khử nhiễu là đủ tốt cho PaddleOCR
-    # Nếu muốn dùng ảnh màu thì trả về 'resized'
+    
     return blur
 
 def draw_results(image, detections):
