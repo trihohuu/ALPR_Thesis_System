@@ -1,0 +1,26 @@
+# Deep Learning Core
+torch>=2.1.0
+torchvision
+ultralytics       # YOLOv8
+paddlepaddle-gpu  # PaddleOCR Core (hoặc paddlepaddle thường nếu lỗi CUDA)
+paddleocr         # PaddleOCR Wrapper
+
+# VLM / HuggingFace (Cho Giai đoạn 2)
+transformers
+accelerate
+bitsandbytes      # Để load model VLM nhẹ hơn (quantization)
+einops            # Cần cho một số model vision mới
+
+# Image Processing
+opencv-python
+numpy
+Pillow
+
+# Web App
+streamlit
+
+# Utils
+PyYAML            # Đọc file config
+
+# Datasets
+roboflow

@@ -1,0 +1,46 @@
+# --- Python & System ---
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+Thumbs.db
+
+# --- Virtual Environment (Môi trường ảo) ---
+# Tùy tên bạn đặt, thường là venv hoặc env
+venv/
+env/
+.venv/
+
+# --- IDE Settings (VS Code, Pycharm...) ---
+.vscode/
+.idea/
+
+# --- Project Data (QUAN TRỌNG: Theo ghi chú trong ảnh) ---
+# Bỏ qua toàn bộ dữ liệu train/val
+data/
+
+# --- Models & Weights (File nặng) ---
+# Bỏ qua các file trọng số mô hình nặng để tránh git bị lỗi hoặc quá tải
+*.pt
+*.pth
+*.onnx
+*.bin
+*.tflite
+models/yolo/*.pt
+models/vlm/*.bin
+models/vlm/*.pt
+
+# --- Jupyter Notebook Checkpoints ---
+.ipynb_checkpoints/
+
+# --- Configuration & Secrets ---
+# Nếu file settings.yaml chứa API Key (DeepSeek/Gemini...), hãy bỏ qua nó
+# và tạo một file mẫu là settings.yaml.example để commit lên
+# config/settings.yaml
+
+# File biến môi trường (nếu dùng)
+.env
+
+# --- Assets (Tùy chọn) ---
+# Nếu video demo quá nặng (>100MB), hãy bỏ comment dòng dưới
+# assets/*.mp4
