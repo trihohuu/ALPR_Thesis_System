@@ -2,7 +2,7 @@ import os
 import shutil 
 from roboflow import Roboflow
 
-api_key = "rhPOY4I3qrx0L0aHX9rB"
+api_key = "insert_your_api"
 workspace = "vietnam-license"
 PROJECT = "vietnam-license-plate-hjswj"
 version = 2

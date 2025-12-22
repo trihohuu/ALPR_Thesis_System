@@ -2,8 +2,8 @@
 torch>=2.1.0
 torchvision
 ultralytics       # YOLOv8
-paddlepaddle-gpu  # PaddleOCR Core (hoặc paddlepaddle thường nếu lỗi CUDA)
-paddleocr         # PaddleOCR Wrapper
+paddlepaddle==2.6.2  # PaddleOCR Core (hoặc paddlepaddle thường nếu lỗi CUDA)
+paddleocr>=2.7.0, <2.8.0         # PaddleOCR Wrapper
 
 # VLM / HuggingFace (Cho Giai đoạn 2)
 transformers
@@ -13,7 +13,7 @@ einops            # Cần cho một số model vision mới
 
 # Image Processing
 opencv-python
-numpy
+numpy<2.0
 Pillow
 
 # Web App

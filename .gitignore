@@ -22,13 +22,12 @@ output/
 
 # --- Models & Weights (File nặng) ---
 # Bỏ qua các file trọng số mô hình nặng để tránh git bị lỗi hoặc quá tải
-*.pt
 *.pth
 *.onnx
 *.bin
 *.tflite
 *.mp4
-models/yolo/*.pt
+*.jpg
 models/vlm/*.bin
 models/vlm/*.pt
 

@@ -18,17 +18,13 @@ class LicensePlateOCR:
             
             boxes = result[0]
             
-            print(f"Số lượng chữ: {len(boxes)}")
-            # Tính chiều cao trung bình của các box chữ để làm ngưỡng (threshold)
-            # Box format: [[x1,y1], [x2,y2], [x3,y3], [x4,y4]] -> chiều cao = y4 - y1
+            # print(f"Số lượng dòng chữ: {len(boxes)}")
             heights = [abs(b[0][3][1] - b[0][0][1]) for b in boxes]
             avg_height = sum(heights) / len(heights) if heights else 20
             
             # Ngưỡng dòng = 1/2 chiều cao chữ (linh hoạt theo kích thước ảnh)
             y_threshold = avg_height * 0.5 
 
-            # Sắp xếp sơ bộ theo Y (tâm của box thay vì cạnh trên)
-            # b[0] là list 4 điểm, lấy trung bình cộng Y của 4 điểm để ra tâm Y
             def get_center_y(box):
                 return sum([p[1] for p in box[0]]) / 4
 
@@ -59,8 +55,8 @@ class LicensePlateOCR:
             total_score = 0
             for line in final_boxes:
                 text, score = line[1]
-                print(f"DEBUG: {text} | Y-Center: {get_center_y(line):.1f}") 
-                full_text += text + " "
+                # print(f"DEBUG: {text} | Y-Center: {get_center_y(line):.1f}") 
+                full_text += text + "-"
                 total_score += score
             
             avg_score = total_score / len(final_boxes)
