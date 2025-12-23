@@ -1,6 +1,5 @@
 import numpy as np
 
-# Giữ nguyên hàm calculate_iou
 def calculate_iou(box1, box2):
     x1_a, y1_a, x2_a, y2_a = box1
     x1_b, y1_b, x2_b, y2_b = box2
@@ -20,14 +19,13 @@ class Tracker:
         self.track_id_count = 0
         self.iou_threshold = iou_threshold
         self.max_lost = max_lost 
-        
-        # [MỚI] Kho lưu trữ vĩnh viễn tất cả các xe từng đi qua
         self.all_tracks = {} 
 
     def update(self, detections):
         updated_tracks = []
         
         for det in detections:
+            # Get info
             box = det['box']
             text = det.get('text', '')
             conf = det.get('ocr_conf', 0.0)
@@ -36,6 +34,7 @@ class Tracker:
             best_match = None
             max_iou = 0
             
+            # Compare past tracks with current box
             for track in self.tracks:
                 iou = calculate_iou(box, track['box'])
                 if iou > max_iou:
@@ -43,11 +42,11 @@ class Tracker:
                     best_match = track
             
             if max_iou > self.iou_threshold and best_match:
-                det['id'] = best_match['id']
-                det['lost_count'] = 0
-                
-                # Logic cập nhật Best Shot
+                det['id'] = best_match['id'] # Put ID to the current box 
+                det['lost_count'] = 0 # Reset lost count
+
                 current_best_conf = best_match.get('best_conf', 0.0)
+                # Replace if higher conf
                 if text != "" and conf > current_best_conf:
                     best_match['best_conf'] = conf
                     best_match['best_text'] = text
@@ -59,6 +58,7 @@ class Tracker:
                 updated_tracks.append(det)
                 best_match['updated'] = True
             else:
+                # New plate
                 self.track_id_count += 1
                 det['id'] = self.track_id_count
                 det['lost_count'] = 0
@@ -69,16 +69,17 @@ class Tracker:
                 det['best_img'] = img
                 updated_tracks.append(det)
 
-        # Re-build danh sách active tracks (self.tracks)
         new_track_list = []
         matched_ids = [t['id'] for t in updated_tracks]
         
         for track in self.tracks:
             if track['id'] not in matched_ids:
+                # Increase lost count if not founded in the frame
                 track['lost_count'] += 1
-                if track['lost_count'] < self.max_lost:
+                if track['lost_count'] < self.max_lost: # maximum 10 lost-frames
                     new_track_list.append(track)
             else:
+                # If found -> Update new coordinates 
                 updated_data = next((t for t in updated_tracks if t['id'] == track['id']), None)
                 if updated_data:
                     track['box'] = updated_data['box']
@@ -90,9 +91,6 @@ class Tracker:
                  new_track_list.append(track)
 
         self.tracks = new_track_list
-        
-        # [MỚI] Đồng bộ dữ liệu sang kho lưu trữ vĩnh viễn (all_tracks)
-        # Lưu ý: Ta cập nhật từ self.tracks để lấy thông tin mới nhất
         for track in self.tracks:
             self.all_tracks[track['id']] = track
             

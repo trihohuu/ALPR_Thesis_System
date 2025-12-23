@@ -17,12 +17,9 @@ class LicensePlateOCR:
                 return "", 0.0
             
             boxes = result[0]
-            
-            # print(f"Số lượng dòng chữ: {len(boxes)}")
             heights = [abs(b[0][3][1] - b[0][0][1]) for b in boxes]
             avg_height = sum(heights) / len(heights) if heights else 20
-            
-            # Ngưỡng dòng = 1/2 chiều cao chữ (linh hoạt theo kích thước ảnh)
+
             y_threshold = avg_height * 0.5 
 
             def get_center_y(box):
@@ -36,21 +33,17 @@ class LicensePlateOCR:
             for i in range(1, len(boxes)):
                 box = boxes[i]
                 prev_box = current_line[-1]
-                
-                # So sánh tâm Y của box hiện tại với tâm Y của box đầu dòng
+
                 if abs(get_center_y(box) - get_center_y(current_line[0])) < y_threshold:
                     current_line.append(box)
                 else:
-                    # Hết dòng -> Sort dòng cũ theo X (từ trái qua phải)
                     current_line = sorted(current_line, key=lambda x: x[0][0][0])
                     final_boxes.extend(current_line)
                     current_line = [box]
-            
-            # Xử lý dòng cuối cùng
+
             current_line = sorted(current_line, key=lambda x: x[0][0][0])
             final_boxes.extend(current_line)
-            
-            # Ghép text
+
             full_text = ""
             total_score = 0
             for line in final_boxes:
@@ -63,12 +56,10 @@ class LicensePlateOCR:
             return self._clean_text(full_text), avg_score
 
         except Exception as e:
-            print(f"Lỗi OCR: {e}")
+            print(f"OCR ERROR?: {e}")
             return "", 0.0
 
     def _clean_text(self, text):
         import re
-        # Chỉ giữ lại chữ cái và số, xóa dấu cách, dấu chấm, gạch ngang
-        # Biển số VN: 59-P1 123.45 -> 59P112345
         clean = re.sub(r'[^a-zA-Z0-9]', '', text) 
         return clean.upper()
