@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 class PlateDetector:
-    def __init__(self, model_path, conf_threshold=0.5):
+    def __init__(self, model_path, conf_threshold=0.32):
         self.model = YOLO(model_path)
         self.conf = conf_threshold
 

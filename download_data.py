@@ -2,10 +2,10 @@ import os
 import shutil 
 from roboflow import Roboflow
 
-api_key = "insert_your_api"
-workspace = "vietnam-license"
-PROJECT = "vietnam-license-plate-hjswj"
-version = 2
+api_key = "rhPOY4I3qrx0L0aHX9rB"
+workspace = "roboflow-universe-projects"
+PROJECT = "license-plate-recognition-rxg4e"
+version = 11
 format = "yolov8"
 
 dest_dir = os.path.join("data", "processed")
