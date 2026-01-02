@@ -6,6 +6,8 @@ import torch
 import sys
 import tempfile
 import numpy as np
+import Levenshtein
+from difflib import SequenceMatcher
 from PIL import Image
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,24 +73,38 @@ def load_pipeline():
 
 pipeline = load_pipeline()
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
 def update_gallery(tracks):
     for trk in tracks:
         tid = trk['id']
         txt = trk.get('best_text', trk.get('text', ''))
         conf = trk.get('best_conf', trk.get('ocr_conf', 0.0))
         img = trk.get('best_img') if trk.get('best_img') is not None else trk.get('plate_img')
-        if txt and img is not None and len(txt) > 3:
-            existing_id = None
+        
+        if txt and img is not None and len(txt) >= 5:
+
+            is_duplicate = False
+            duplicate_id = None
+
             for stored_id, data in st.session_state['detected_plates'].items():
-                if data['text'] == txt:
-                    existing_id = stored_id
+                stored_txt = data['text']
+
+                if stored_id == tid:
+                    is_duplicate = True
+                    duplicate_id = stored_id
+                    break
+
+                if similar(txt, stored_txt) > 0.8 and abs(tid - stored_id) < 20:
+                    is_duplicate = True
+                    duplicate_id = stored_id
                     break
             
-            # 2. Xử lý cập nhật
-            if existing_id:
-                current_data = st.session_state['detected_plates'][existing_id]
-                if conf > current_data['conf']:
-                    st.session_state['detected_plates'][existing_id] = {
+            if is_duplicate:
+                current_data = st.session_state['detected_plates'][duplicate_id]
+                if conf > current_data['conf'] or len(txt) > len(current_data['text']):
+                    st.session_state['detected_plates'][duplicate_id] = {
                         'img': img, 
                         'text': txt, 
                         'conf': conf
@@ -188,7 +204,7 @@ if run_system and pipeline:
             st_status.info("Đang xử lý video...")
             
             frame_idx = 0
-            
+            writer = None
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
@@ -203,8 +219,13 @@ if run_system and pipeline:
                     render_gallery_ui(st_gallery)
                 
                 frame_idx += 1
+                if writer:
+                    writer.write(processed_frame)
 
             cap.release()
+            if writer:
+                writer.release()
+            pipeline.save_final_results()
             render_gallery_ui(st_gallery) 
             st_status.success("Đã chạy xong video!")
 

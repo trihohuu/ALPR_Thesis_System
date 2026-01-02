@@ -53,7 +53,11 @@ class LicensePlateOCR:
                 total_score += score
             
             avg_score = total_score / len(final_boxes)
-            return self._clean_text(full_text), avg_score
+
+            cleaned_text = self._clean_text(full_text)    
+            final_text = self._heuristic_uk_format(cleaned_text) 
+            
+            return final_text, avg_score
 
         except Exception as e:
             print(f"OCR ERROR?: {e}")
@@ -63,3 +67,26 @@ class LicensePlateOCR:
         import re
         clean = re.sub(r'[^a-zA-Z0-9]', '', text) 
         return clean.upper()
+    
+    def _heuristic_uk_format(self, text):
+        if len(text) != 7:
+            return text 
+
+        dict_char_to_num = {'O': '0', 'D': '0', 'Q': '0', 'I': '1', 'J': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+        dict_num_to_char = {'0': 'O', '1': 'I', '2': 'Z', '5': 'S', '6': 'G', '8': 'B'}
+        
+        text_list = list(text)
+
+        for i in [0, 1]:
+            if text_list[i] in dict_num_to_char:
+                text_list[i] = dict_num_to_char[text_list[i]]
+
+        for i in [2, 3]:
+            if text_list[i] in dict_char_to_num:
+                text_list[i] = dict_char_to_num[text_list[i]]
+
+        for i in [4, 5, 6]:
+            if text_list[i] in dict_num_to_char:
+                text_list[i] = dict_num_to_char[text_list[i]]
+
+        return "".join(text_list)

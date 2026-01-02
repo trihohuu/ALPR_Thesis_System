@@ -3,6 +3,7 @@ import os
 import time
 from core.detector import PlateDetector
 from core.ocr_paddle import LicensePlateOCR
+# from core.ocr_easy import LicensePlateEasyOCR as LicensePlateOCR
 from core.tracker import Tracker
 from core.image_utils import preprocess_plate, draw_results
 
@@ -74,7 +75,7 @@ class ALPRPipeline:
         for track in all_vehicles:
             plate_txt = track.get('best_text', '')
             plate_img = track.get('best_img', None)
-            if plate_txt and plate_img is not None and len(plate_txt) > 3:
+            if plate_txt and plate_img is not None and len(plate_txt) >= 6:
                 safe_name = "".join([c for c in plate_txt if c.isalnum()])
                 filename = f"{safe_name}.jpg"
                 save_path = os.path.join(self.crop_dir, filename)

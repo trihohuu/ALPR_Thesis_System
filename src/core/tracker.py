@@ -47,11 +47,11 @@ class Tracker:
 
                 current_best_conf = best_match.get('best_conf', 0.0)
                 # Replace if higher conf
-                if text != "" and conf > current_best_conf:
+                if text != "" and len(text) >= 6 and conf > current_best_conf:
                     best_match['best_conf'] = conf
                     best_match['best_text'] = text
                     best_match['best_img'] = img
-                    det['text'] = text 
+                    det['text'] = text
                 else:
                     det['text'] = best_match.get('best_text', best_match.get('text', ''))
                 
