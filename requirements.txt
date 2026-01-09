@@ -18,6 +18,7 @@ Pillow
 
 # Web App
 streamlit
+pandas
 
 # Utils
 PyYAML            # Đọc file config

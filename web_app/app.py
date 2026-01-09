@@ -7,6 +7,7 @@ import sys
 import tempfile
 import numpy as np
 import Levenshtein
+import pandas as pd
 from difflib import SequenceMatcher
 from PIL import Image
 
@@ -170,105 +171,178 @@ elif source_option == "Webcam Laptop":
         reset_session()
 
 # --- 5. MAIN LOGIC ---
-st_frame = st.empty()    
-st_gallery = st.empty() 
-st_status = st.empty()
 
-if run_system and pipeline:
-    
-    # === TRƯỜNG HỢP 1: UPLOAD FILE ẢNH/VIDEO ===
-    if source_option == "Upload Video/Ảnh" and uploaded_file is not None:
-        file_type = uploaded_file.name.split('.')[-1].lower()
+# Tạo 2 Tabs: Một cho Camera/Video, Một cho Thống kê
+tab1, tab2 = st.tabs(["🎥 Camera & Nhận diện", "📊 Thống kê (Dashboard)"])
+
+with tab1:
+    st_frame = st.empty()    
+    st_gallery = st.empty() 
+    st_status = st.empty()
+
+    if run_system and pipeline:
         
-        # -- XỬ LÝ ẢNH TĨNH --
-        if file_type in ['jpg', 'png', 'jpeg']:
-            st_status.info("Đang xử lý ảnh...")
-
-            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-            frame = cv2.imdecode(file_bytes, 1)
-
-            processed_frame, tracks = pipeline.process_single_frame(frame, frame_idx=0)
-            update_gallery(tracks)
-
-            frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-            st_frame.image(frame_rgb, channels="RGB", use_container_width=True)
-            render_gallery_ui(st_gallery)
-            st_status.success("Hoàn tất!")
-
-        # -- XỬ LÝ VIDEO --
-        elif file_type in ['mp4', 'avi', 'mov']:
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
-            tfile.write(uploaded_file.read())
+        # === TRƯỜNG HỢP 1: UPLOAD FILE ẢNH/VIDEO ===
+        if source_option == "Upload Video/Ảnh" and uploaded_file is not None:
+            file_type = uploaded_file.name.split('.')[-1].lower()
             
-            cap = cv2.VideoCapture(tfile.name)
-            st_status.info("Đang xử lý video...")
-            
-            frame_idx = 0
-            writer = None
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                processed_frame, tracks = pipeline.process_single_frame(frame, frame_idx)
+            # -- XỬ LÝ ẢNH TĨNH --
+            if file_type in ['jpg', 'png', 'jpeg']:
+                st_status.info("Đang xử lý ảnh...")
+
+                file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+                frame = cv2.imdecode(file_bytes, 1)
+
+                processed_frame, tracks = pipeline.process_single_frame(frame, frame_idx=0)
                 update_gallery(tracks)
-                
+
                 frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
                 st_frame.image(frame_rgb, channels="RGB", use_container_width=True)
-                if frame_idx % 5 == 0:
-                    render_gallery_ui(st_gallery)
+                render_gallery_ui(st_gallery)
+                st_status.success("Hoàn tất!")
+
+            # -- XỬ LÝ VIDEO --
+            elif file_type in ['mp4', 'avi', 'mov']:
+                tfile = tempfile.NamedTemporaryFile(delete=False) 
+                tfile.write(uploaded_file.read())
                 
-                frame_idx += 1
+                cap = cv2.VideoCapture(tfile.name)
+                st_status.info("Đang xử lý video...")
+                
+                frame_idx = 0
+                writer = None
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    processed_frame, tracks = pipeline.process_single_frame(frame, frame_idx)
+                    update_gallery(tracks)
+                    
+                    frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+                    st_frame.image(frame_rgb, channels="RGB", use_container_width=True)
+                    if frame_idx % 5 == 0:
+                        render_gallery_ui(st_gallery)
+                    
+                    frame_idx += 1
+                    if writer:
+                        writer.write(processed_frame)
+
+                cap.release()
                 if writer:
-                    writer.write(processed_frame)
+                    writer.release()
+                pipeline.save_final_results() # Hàm này giờ đã ghi cả CSV log
+                render_gallery_ui(st_gallery) 
+                st_status.success("Đã chạy xong video!")
 
-            cap.release()
-            if writer:
-                writer.release()
-            pipeline.save_final_results()
-            render_gallery_ui(st_gallery) 
-            st_status.success("Đã chạy xong video!")
+        # === LIVE STREAM (WEBCAM/RTSP) ===
+        elif source_option in ["RTSP Camera", "Webcam Laptop"]:
+            st_status.info("Đang kết nối tới Camera...")
+            
+            try:
+                streamer = RTSPVideoStream(rtsp_url).start()
+            except Exception as e:
+                st.error(f"Lỗi khởi tạo: {e}")
+                st.stop()
+                
+            time.sleep(1.0)
+            
+            if not streamer.grabbed:
+                st.error("Không kết nối được camera.")
+                streamer.stop()
+            else:
+                st_status.success("Đã kết nối! Đang xử lý...")
+                frame_count = 0
+                fps_start = time.time()
+                
+                while run_system:
+                    frame = streamer.read()
+                    if frame is None:
+                        continue
+                    processed_frame, tracks = pipeline.process_single_frame(frame, frame_count)
+                    update_gallery(tracks)
+                    frame_count += 1
+                    if frame_count % 10 == 0:
+                        fps = 10 / (time.time() - fps_start)
+                        fps_start = time.time()
+                        cv2.putText(processed_frame, f"FPS: {fps:.1f}", (20, 50), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+                    st_frame.image(frame_rgb, channels="RGB", use_container_width=True)
+                    if frame_count % 10 == 0:
+                        render_gallery_ui(st_gallery)
+                
+                streamer.stop()
+    else:
+        if not pipeline:
+            st.warning("Hệ thống chưa load được model.")
+        elif not run_system:
+            st.info("Hãy chọn nguồn và nhấn Bắt đầu (Tab 1).")
 
-    # === LIVE STREAM (WEBCAM/RTSP) ===
-    elif source_option in ["RTSP Camera", "Webcam Laptop"]:
-        st_status.info("Đang kết nối tới Camera...")
-        
+# ==========================================
+# TAB 2: DASHBOARD MONITORING (Mới thêm)
+# ==========================================
+with tab2:
+    st.header("Dashboard Giám sát Hoạt động")
+    
+    # Đường dẫn file log CSV (Khớp với logic trong pipeline.py)
+    # File nằm ở thư mục output/recognition_log.csv
+    log_path = os.path.join(project_root, 'output', 'recognition_log.csv')
+    
+    # Nút refresh dữ liệu thủ công
+    if st.button("Làm mới dữ liệu"):
+        st.rerun()
+
+    if os.path.exists(log_path):
         try:
-            streamer = RTSPVideoStream(rtsp_url).start()
+            # Đọc file CSV
+            df = pd.read_csv(log_path)
+            
+            if not df.empty:
+                # --- 1. KPI Cards ---
+                total_vehicles = len(df)
+                avg_conf = df['Confidence'].mean()
+                last_time = df['Timestamp'].iloc[-1]
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Tổng xe phát hiện", total_vehicles, delta="Tích lũy")
+                col2.metric("Độ tin cậy TB", f"{avg_conf:.1%}")
+                col3.metric("Lần cuối nhận diện", last_time.split(" ")[-1]) # Lấy giờ
+                
+                st.divider()
+                
+                # --- 2. Charts ---
+                st.subheader("Phân bố theo thời gian")
+                
+                # Xử lý dữ liệu thời gian
+                df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+                df['Hour'] = df['Timestamp'].dt.hour
+                
+                # Đếm số lượng xe theo giờ
+                hourly_counts = df['Hour'].value_counts().sort_index()
+                
+                # Vẽ biểu đồ cột
+                st.bar_chart(hourly_counts)
+                
+                # --- 3. Raw Data ---
+                st.subheader("Dữ liệu chi tiết")
+                st.dataframe(
+                    df.sort_values(by='Timestamp', ascending=False),
+                    use_container_width=True,
+                    column_config={
+                        "Image_File": st.column_config.TextColumn("Ảnh minh chứng"),
+                        "Confidence": st.column_config.ProgressColumn(
+                            "Độ tin cậy", 
+                            format="%.2f", 
+                            min_value=0, 
+                            max_value=1
+                        ),
+                    }
+                )
+            else:
+                st.info("File log tồn tại nhưng chưa có dữ liệu nào.")
+                
         except Exception as e:
-            st.error(f"Lỗi khởi tạo: {e}")
-            st.stop()
-            
-        time.sleep(1.0)
-        
-        if not streamer.grabbed:
-            st.error("Không kết nối được camera.")
-            streamer.stop()
-        else:
-            st_status.success("Đã kết nối! Đang xử lý...")
-            frame_count = 0
-            fps_start = time.time()
-            
-            while run_system:
-                frame = streamer.read()
-                if frame is None:
-                    continue
-                processed_frame, tracks = pipeline.process_single_frame(frame, frame_count)
-                update_gallery(tracks)
-                frame_count += 1
-                if frame_count % 10 == 0:
-                    fps = 10 / (time.time() - fps_start)
-                    fps_start = time.time()
-                    cv2.putText(processed_frame, f"FPS: {fps:.1f}", (20, 50), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                st_frame.image(frame_rgb, channels="RGB", use_container_width=True)
-                if frame_count % 10 == 0:
-                    render_gallery_ui(st_gallery)
-            
-            streamer.stop()
-else:
-    if not pipeline:
-        st.warning("Hệ thống chưa load được model.")
-    elif not run_system:
-        st.info("Hãy chọn nguồn và nhấn Bắt đầu.")
+            st.error(f"Lỗi đọc file log: {e}")
+    else:
+        st.warning("Chưa có dữ liệu thống kê (Hệ thống chưa chạy hoặc chưa lưu kết quả vào CSV).")

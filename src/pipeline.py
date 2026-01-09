@@ -2,6 +2,8 @@ import cv2
 import os
 import time
 from core.detector import PlateDetector
+import csv
+from datetime import datetime
 from core.ocr_paddle import LicensePlateOCR
 # from core.ocr_easy import LicensePlateEasyOCR as LicensePlateOCR
 from core.tracker import Tracker
@@ -72,21 +74,41 @@ class ALPRPipeline:
         count = 0
         all_vehicles = list(self.tracker.all_tracks.values())
         
-        for track in all_vehicles:
-            plate_txt = track.get('best_text', '')
-            plate_img = track.get('best_img', None)
-            if plate_txt and plate_img is not None and len(plate_txt) >= 6:
-                safe_name = "".join([c for c in plate_txt if c.isalnum()])
-                filename = f"{safe_name}.jpg"
-                save_path = os.path.join(self.crop_dir, filename)
-                
-                try:
-                    cv2.imwrite(save_path, plate_img)
-                    count += 1
-                except Exception as e:
-                    print(f"Lỗi lưu file {filename}: {e}")
-                    
-        print(f"Tổng cộng đã lưu: {count} biển số.")
+        if not os.path.exists(self.crop_dir):
+            os.makedirs(self.crop_dir, exist_ok=True)
+            
+        log_file = os.path.join(self.crop_dir, '..', 'recognition_log.csv')
+        file_exists = os.path.isfile(log_file)
+        
+        try:
+            with open(log_file, mode='a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                if not file_exists:
+                    writer.writerow(['Timestamp', 'Plate_Text', 'Confidence', 'Image_File'])
+
+                for track in all_vehicles:
+                    plate_txt = track.get('best_text', '')
+                    plate_img = track.get('best_img', None)
+                    conf = track.get('best_conf', 0.0)
+
+                    if plate_txt and plate_img is not None and len(plate_txt) >= 6:
+                        safe_name = "".join([c for c in plate_txt if c.isalnum()])
+                        filename = f"{safe_name}.jpg"
+                        save_path = os.path.join(self.crop_dir, filename)
+
+                        cv2.imwrite(save_path, plate_img)
+                        count += 1
+
+                        writer.writerow([
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            plate_txt,
+                            f"{conf:.2f}",
+                            filename
+                        ])
+            print(f"Đã lưu {count} biển số và ghi log vào CSV.")
+            
+        except Exception as e:
+            print(f"Lỗi: {e}")
     
     def run(self, source_path, show=True, save_path=None):
         if not os.path.exists(source_path):
