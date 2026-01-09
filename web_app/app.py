@@ -18,7 +18,7 @@ sys.path.append(src_path)
 from rtsp_stream import RTSPVideoStream
 
 # --- CẤU HÌNH API ---
-API_URL = "http://localhost:8000/process_frame"
+API_URL = os.getenv("API_URL", "http://localhost:8000/process_frame")
 
 st.set_page_config(page_title="Hệ thống nhận diện biển số xe", layout="wide")
 
