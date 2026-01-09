@@ -42,8 +42,8 @@ class Tracker:
                     best_match = track
             
             if max_iou > self.iou_threshold and best_match:
-                det['id'] = best_match['id']
-                det['lost_count'] = 0 
+                det['id'] = best_match['id'] # Put ID to the current box 
+                det['lost_count'] = 0 # Reset lost count
 
                 current_best_conf = best_match.get('best_conf', 0.0)
                 # Replace if higher conf
