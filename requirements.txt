@@ -18,6 +18,10 @@ Pillow
 
 # Web App
 streamlit
+fastapi 
+uvicorn 
+python-multipart 
+requests
 
 # Utils
 PyYAML            # Đọc file config
