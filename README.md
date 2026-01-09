@@ -57,6 +57,7 @@ pip install -r requirements.txt
 1. Tải và giải nén MediaMTX
 2. Chạy file thực thi **mediamtx.exe** (Windows) hoặc **./mediamtx**
 3. Đảm bảo Camera/Điện thoại và Máy tính cùng mạng LAN.
+Lưu ý: Trong file mediamtx.yml thay đổi dòng protocols từ [rtsp, udp, tcp] thành [tcp] để chất lượng stream tốt hơn
 
 ### 4. Chạy ứng dụng
 
@@ -67,3 +68,5 @@ streamlit run app.py
 ### 5. Tác giả
 - Phạm Hồ Hữu Trí - 24521841 - Khoa Học Máy Tính
 - Email: edricalbert2006@gmail.com
+- Phan Minh Trí - 24521843 - Khoa học Máy tính
+- Email: 24521843@gm.uit.edu.vn
