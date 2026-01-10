@@ -13,7 +13,7 @@ sys.path.append(src_path)
 
 from pipeline import ALPRPipeline
 
-app = FastAPI(title="ALPR API Service")
+app = FastAPI()
 
 pipeline_model = None
 

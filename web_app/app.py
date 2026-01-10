@@ -65,8 +65,8 @@ def base64_to_numpy(base64_string):
 
 def draw_tracks_on_frame(frame, tracks):
     for trk in tracks:
-        if 'bbox' in trk:
-            x1, y1, x2, y2 = map(int, trk['bbox'])
+        if 'box' in trk:
+            x1, y1, x2, y2 = map(int, trk['box'])
 
             label = trk.get('text', '')
             conf = trk.get('ocr_conf', 0.0)
