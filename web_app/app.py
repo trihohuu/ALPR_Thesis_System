@@ -9,16 +9,8 @@ import requests
 import base64
 from difflib import SequenceMatcher
 
-# --- SETUP ĐƯỜNG DẪN ---
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-src_path = os.path.join(project_root, 'src')
-sys.path.append(src_path)
-
-from rtsp_stream import RTSPVideoStream
-
-# --- CẤU HÌNH API ---
 API_URL = os.getenv("API_URL", "http://localhost:8000/process_frame")
+from rtsp_stream import RTSPVideoStream
 
 st.set_page_config(page_title="Hệ thống nhận diện biển số xe", layout="wide")
 
@@ -186,10 +178,6 @@ st_gallery = st.empty()
 st_status = st.empty()
 
 # Kiểm tra API
-try:
-    requests.get("http://localhost:8000/docs", timeout=1)
-except:
-    st.warning("Hãy chạy Backend trước")
 
 if run_system:
     # 1. UPLOAD FILE

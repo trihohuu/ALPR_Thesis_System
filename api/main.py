@@ -9,10 +9,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 src_path = os.path.join(project_root, 'src')
-sys.path.append(src_path)
 
-from pipeline import ALPRPipeline
-
+from src.pipeline import ALPRPipeline
 app = FastAPI()
 
 pipeline_model = None

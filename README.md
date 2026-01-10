@@ -79,27 +79,26 @@ Hệ thống được đóng gói theo kiến trúc Microservices:
 ---
 
 ## 6. Hướng dẫn chạy (How to run)
+**Yêu cầu**: Máy tính đã cài đặt và bật Docker Desktop
 
-### Bước 1: Cài đặt thư viện: 
+### Bước 1: Clone dự án: 
 ```bash
 git clone https://github.com/trihohuu/ALPR_Thesis_System.git
 cd ALPR_Thesis_System
-pip install -r requirements.txt
 ```
 
-### Bước 2: Khởi động BackEnd
+### Bước 2: Khởi chạy hệ thống
 Mở terminal tại thư mục gốc của dự án và chạy lệnh:
 
 ```bash
-python api/main.py
+docker-compose up --build
 ```
+(Lệnh này sẽ tự động cài đặt thư viện, setup database và khởi động cả Backend lẫn Frontend).
 
-### Bước 3: Khởi động Streamlit
-Mở thêm 1 terminal khác tại thư mục gốc của dự án và chạy lệnh:
-
-```bash
-streamlit run web_app/app.py
-```
+### Bước 3: Sử dụng
+Sau khi thấy thông báo hoàn tất, truy cập trình duyệt tại:
+* **Web App**: http://localhost:8501 (Lưu ý: Nếu terminal hiện 0.0.0.0:8501, hãy truy cập bằng localhost)
+* **API Documentation**: http://localhost:8000/docs
 
 ## 7. Credit
 - Phạm Hồ Hữu Trí - 24521841 (24521841@gm.uit.edu.vn)
