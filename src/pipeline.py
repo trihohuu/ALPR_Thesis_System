@@ -1,27 +1,27 @@
 import cv2
 import os
-import time
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from core.detector import PlateDetector
 from core.ocr_paddle import LicensePlateOCR
-# from core.ocr_easy import LicensePlateEasyOCR as LicensePlateOCR
 from core.tracker import Tracker
 from core.image_utils import preprocess_plate, draw_results
 
 class ALPRPipeline:
     def __init__(self, yolo_path, use_gpu=True):
         if not os.path.exists(yolo_path):
-            print(f"DEBUG: Looking for model at: {os.path.abspath(yolo_path)}")
             raise FileNotFoundError(f"YOLO weights not found at: {yolo_path}")
         
         self.detector = PlateDetector(model_path=yolo_path)
         self.ocr = LicensePlateOCR(use_gpu=use_gpu)
         self.tracker = Tracker(iou_threshold=0.5)
-        
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
 
-        self.crop_dir = os.path.join(current_file_dir, '..', 'output', 'plates')
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        
+        self.crop_dir = os.path.join(project_root, 'data', 'final_crops')
         os.makedirs(self.crop_dir, exist_ok=True)
-        self.save_ids = set()
 
     def _process_frame(self, frame, run_ocr=True):
         detections = self.detector.detect(frame)
@@ -45,8 +45,11 @@ class ALPRPipeline:
         return result_frame
 
     def process_single_frame(self, frame, frame_idx):
-        run_ocr = (frame_idx % 5 == 0)
         detections = self.detector.detect(frame)
+        if not detections:
+             return frame, []
+        
+        run_ocr = (frame_idx % 10 == 0)
         
         if run_ocr:
             for item in detections:
@@ -64,9 +67,8 @@ class ALPRPipeline:
                 item['ocr_conf'] = 0.0
 
         final_results = self.tracker.update(detections)
-        result_frame = draw_results(frame, final_results)
         
-        return result_frame, final_results
+        return None, final_results
 
     def save_final_results(self):
         count = 0

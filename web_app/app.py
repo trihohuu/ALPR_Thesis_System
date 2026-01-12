@@ -14,7 +14,6 @@ from rtsp_stream import RTSPVideoStream
 
 st.set_page_config(page_title="Hệ thống nhận diện biển số xe", layout="wide")
 
-# --- CSS STYLES ---
 st.markdown("""
 <style>
     .reportview-container { margin-top: -2em; }

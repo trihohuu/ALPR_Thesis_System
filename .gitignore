@@ -19,6 +19,7 @@ env/
 # Bỏ qua toàn bộ dữ liệu train/val
 data/
 output/
+wandb/
 
 # --- Models & Weights (File nặng) ---
 # Bỏ qua các file trọng số mô hình nặng để tránh git bị lỗi hoặc quá tải

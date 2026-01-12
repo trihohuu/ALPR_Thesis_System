@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: yolov8n.pt
-data: /mnt/d/github/alpr_thesis_system/data/processed/data.yaml
+data: /mnt/d/github/alpr_thesis_system/data/processed/data_aug.yaml
 epochs: 50
 time: null
 patience: 100
