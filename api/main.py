@@ -65,6 +65,7 @@ def clean_numpy_data(data):
     elif isinstance(data, np.ndarray): return data.tolist()
     else: return data
 
+
 @app.post("/process_frame")
 async def process_frame(
     file: UploadFile = File(...), 

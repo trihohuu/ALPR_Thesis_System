@@ -10,6 +10,8 @@ import base64
 from difflib import SequenceMatcher
 
 API_URL = os.getenv("API_URL", "http://localhost:8000/process_frame")
+SKIP_INTERVAL = 3 
+
 from rtsp_stream import RTSPVideoStream
 
 st.set_page_config(page_title="Hệ thống nhận diện biển số xe", layout="wide")
@@ -55,6 +57,7 @@ def base64_to_numpy(base64_string):
     return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
 def draw_tracks_on_frame(frame, tracks):
+    img_draw = frame.copy()
     for trk in tracks:
         if 'box' in trk:
             x1, y1, x2, y2 = map(int, trk['box'])
@@ -65,18 +68,17 @@ def draw_tracks_on_frame(frame, tracks):
 
             color = (0, 255, 0) 
 
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.rectangle(img_draw, (x1, y1), (x2, y2), color, 2)
 
             caption = f"{label} ({conf:.2f})" if label else f"ID: {track_id}"
 
             (t_w, t_h), _ = cv2.getTextSize(caption, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-            cv2.rectangle(frame, (x1, y1 - 25), (x1 + t_w, y1), color, -1)
-            cv2.putText(frame, caption, (x1, y1 - 5), 
+            cv2.rectangle(img_draw, (x1, y1 - 25), (x1 + t_w, y1), color, -1)
+            cv2.putText(img_draw, caption, (x1, y1 - 5), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             
-    return frame
+    return img_draw
 
-# API section
 def call_process_api(frame, frame_idx):
     try:
         _, img_encoded = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
@@ -90,20 +92,18 @@ def call_process_api(frame, frame_idx):
             result = response.json()
             tracks = result.get('tracks', [])
 
-            processed_frame = draw_tracks_on_frame(frame, tracks)
-
             for trk in tracks:
                 if trk.get('plate_img'):
                     trk['plate_img'] = base64_to_numpy(trk['plate_img'])
                 if trk.get('best_img'):
                     trk['best_img'] = base64_to_numpy(trk['best_img'])
             
-            return processed_frame, tracks
+            return tracks
         else:
-            return frame, []
+            return []
             
     except Exception as e:
-        return frame, []
+        return []
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
@@ -176,44 +176,54 @@ st_frame = st.empty()
 st_gallery = st.empty() 
 st_status = st.empty()
 
-# Kiểm tra API
-
 if run_system:
-    # 1. UPLOAD FILE
     if source_option == "Upload Video/Ảnh" and uploaded_file is not None:
         file_type = uploaded_file.name.split('.')[-1].lower()
+
         if file_type in ['jpg', 'png', 'jpeg']:
-            st_status.info("Đang xử lý")
+            st_status.info("Đang xử lý ảnh...")
             file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
             frame = cv2.imdecode(file_bytes, 1)
-            processed_frame, tracks = call_process_api(frame, 0)
+            
+            tracks = call_process_api(frame, 0)
+            processed_frame = draw_tracks_on_frame(frame, tracks)
             update_gallery(tracks)
+            
             st_frame.image(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB), use_container_width=True)
             render_gallery_ui(st_gallery)
             st_status.success("Done")
-        
+
         elif file_type in ['mp4', 'avi', 'mov']:
             tfile = tempfile.NamedTemporaryFile(delete=False) 
             tfile.write(uploaded_file.read())
             cap = cv2.VideoCapture(tfile.name)
-            st_status.info("Đang xử lý")
+            st_status.info(f"Đang xử lý Video (Tốc độ x{SKIP_INTERVAL})...")
+            
             frame_idx = 0
+            last_tracks = [] 
+            
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret: break
-                
-                processed_frame, tracks = call_process_api(frame, frame_idx)
-                update_gallery(tracks)
+                if frame_idx % SKIP_INTERVAL == 0:
+                    new_tracks = call_process_api(frame, frame_idx)
+                    if new_tracks is not None:
+                        last_tracks = new_tracks
+                        update_gallery(last_tracks)
+                processed_frame = draw_tracks_on_frame(frame, last_tracks)
                 
                 st_frame.image(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB), use_container_width=True)
-                if frame_idx % 5 == 0: render_gallery_ui(st_gallery)
+                
+                if frame_idx % 10 == 0: 
+                    render_gallery_ui(st_gallery)
+                
                 frame_idx += 1
+            
             cap.release()
             st_status.success("Hoàn tất")
 
-    # 2. STREAM / WEBCAM
     elif source_option in ["RTSP Camera", "Webcam Laptop"]:
-        st_status.info("Đang kết nối")
+        st_status.info("Đang kết nối...")
         streamer = RTSPVideoStream(rtsp_url).start()
         time.sleep(1.0)
         
@@ -221,20 +231,28 @@ if run_system:
             st.error("Không thể kết nối camera.")
             streamer.stop()
         else:
-            st_status.success("Đang chạy Stream (Client-Side Rendering)...")
+            st_status.success(f"Đang chạy Stream (Skip Interval: {SKIP_INTERVAL})...")
+            
             frame_count = 0
+            last_tracks = [] 
+            
             while run_system:
                 frame = streamer.read()
                 if frame is None: continue
                 
-                # Gọi API lấy tọa độ -> Tự vẽ -> Hiển thị
-                processed_frame, tracks = call_process_api(frame, frame_count)
+                if frame_count % SKIP_INTERVAL == 0:
+                    new_tracks = call_process_api(frame, frame_count)
+                    if new_tracks is not None:
+                        last_tracks = new_tracks
+                        update_gallery(last_tracks)
                 
-                update_gallery(tracks)
-                frame_count += 1
+                display_frame = draw_tracks_on_frame(frame, last_tracks)
                 
-                st_frame.image(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB), use_container_width=True)
+                st_frame.image(cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB), use_container_width=True)
+                
                 if frame_count % 10 == 0:
                     render_gallery_ui(st_gallery)
+                
+                frame_count += 1
             
             streamer.stop()

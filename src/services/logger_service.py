@@ -71,16 +71,21 @@ class LoggerService:
         plate_img = packet['plate_img']
         timestamp_obj = packet['timestamp_obj']
 
+        # Nếu conf < 0.8 thì xác định nó là hard-sample
         is_hard_sample = (conf < 0.8) or (len(text) == 0)
+
+        # Phân loại thư mục lưu trữ (hard/normal)
         save_folder = self.hard_dir if is_hard_sample else self.raw_dir
         sample_type = 'hard' if is_hard_sample else 'normal'
 
         timestamp_str = timestamp_obj.strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
 
+        # Tạo tên file
         filename = f"{timestamp_str}_ID{track_id}_{unique_id}.jpg"
         file_path = os.path.join(save_folder, filename)
 
+        # Ghi ảnh vào
         cv2.imwrite(file_path, plate_img)
 
         with open(self.log_file, mode='a', newline='', encoding='utf-8') as f:

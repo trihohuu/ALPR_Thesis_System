@@ -36,7 +36,7 @@ class MonitorService:
         self.plate_counts = 0
         
     def update(self, process_time_ms, tracks):
-        self.frame_count += 1
+        self.frame_count += 3
         self.total_process_time += process_time_ms
 
         frame_has_plate = False
@@ -59,6 +59,7 @@ class MonitorService:
             avg_fps = self.frame_count / elapsed_time if elapsed_time > 0 else 0
             avg_latency = self.total_process_time / self.frame_count if self.frame_count > 0 else 0
             
+            # Ghi log json về hiệu năng
             avg_conf = 0.0
             if len(self.conf_scores) > 0:
                 avg_conf = float(np.mean(self.conf_scores))
